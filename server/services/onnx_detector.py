@@ -1,4 +1,7 @@
 import time
+import base64
+import threading
+from collections import OrderedDict
 from pathlib import Path
 
 import cv2
@@ -20,7 +23,8 @@ class OnnxDetector:
         self.device = "cuda" if use_cuda else "cpu"
         self.face_session = ort.InferenceSession(str(model_dir / "yolo11_face.onnx"), providers=providers)
         self.pfld_session = ort.InferenceSession(str(model_dir / "pfpld.onnx"), providers=providers)
-        self.classifier = FatigueClassifier(window_seconds=60)
+        self._classifiers = OrderedDict()
+        self._classifier_lock = threading.Lock()
 
     def detect_image(self, content: bytes, filename: str) -> dict:
         image = self._decode(content)
@@ -28,32 +32,55 @@ class OnnxDetector:
         details = [self._landmark_metrics(image, box) for box in faces]
         details = [item for item in details if item is not None]
         if not details:
-            return self._result(filename, 0, None, "normal", [], 0)
+            result = self._result(filename, 0, None, "normal", [], 0)
+            result["processed_image"] = self._annotate(image, [], [], "normal")
+            return result
         metrics = details[0]
         events = self._events(metrics)
         level = "moderate" if len(events) >= 2 else "mild" if events else "normal"
         score = {"normal": 10, "mild": 45, "moderate": 70}[level]
-        return self._result(filename, len(details), metrics, level, events, score)
+        result = self._result(filename, len(details), metrics, level, events, score)
+        result["processed_image"] = self._annotate(image, faces, details, level)
+        return result
 
-    def detect_frame(self, content: bytes) -> dict:
+    def detect_frame(self, content: bytes, session_id: str = "default", timestamp: float | None = None) -> dict:
         image = self._decode(content)
         faces = self._detect_faces(image)
         details = [self._landmark_metrics(image, box) for box in faces]
         details = [item for item in details if item is not None]
+        timestamp = time.monotonic() if timestamp is None else timestamp
         if not details:
-            return self._result("camera.jpg", 0, None, "normal", [], 0)
+            snapshot = self._update_session(session_id, Observation(), timestamp)
+            return self._result("camera.jpg", 0, None, snapshot.level, [], snapshot.score)
         metrics = details[0]
         events = self._events(metrics)
-        snapshot = self.classifier.update(
+        snapshot = self._update_session(
+            session_id,
             Observation(
                 eyes_closed="eye_closed" in events,
                 yawning="yawn" in events,
                 head_down="head_down" in events,
                 **metrics,
             ),
-            time.monotonic(),
+            timestamp,
         )
         return self._result("camera.jpg", len(details), metrics, snapshot.level, events, snapshot.score)
+
+    def _update_session(self, session_id: str, observation: Observation, timestamp: float):
+        if not hasattr(self, "_classifier_lock"):
+            self._classifier_lock = threading.Lock()
+        if not hasattr(self, "_classifiers"):
+            self._classifiers = OrderedDict()
+        with self._classifier_lock:
+            classifier = self._classifiers.get(session_id)
+            if classifier is None:
+                classifier = FatigueClassifier(window_seconds=60)
+                self._classifiers[session_id] = classifier
+                while len(self._classifiers) > 64:
+                    self._classifiers.popitem(last=False)
+            else:
+                self._classifiers.move_to_end(session_id)
+            return classifier.update(observation, timestamp)
 
     @staticmethod
     def _decode(content: bytes) -> np.ndarray:
@@ -134,6 +161,20 @@ class OnnxDetector:
         if abs(metrics["pitch"]) > 30:
             events.append("head_down")
         return events
+
+    @staticmethod
+    def _annotate(image: np.ndarray, boxes, details, level: str) -> str:
+        canvas = image.copy()
+        color = (40, 200, 90) if level == "normal" else (40, 170, 255) if level != "severe" else (50, 50, 240)
+        for box, metrics in zip(boxes, details):
+            x1, y1, x2, y2 = box
+            cv2.rectangle(canvas, (x1, y1), (x2, y2), color, 2)
+            text = f"{level.upper()}  EAR {metrics['ear']:.2f}  MAR {metrics['mar']:.2f}"
+            cv2.putText(canvas, text, (x1, max(24, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2, cv2.LINE_AA)
+        encoded, buffer = cv2.imencode(".jpg", canvas, [cv2.IMWRITE_JPEG_QUALITY, 88])
+        if not encoded:
+            return ""
+        return "data:image/jpeg;base64," + base64.b64encode(buffer).decode("ascii")
 
     @staticmethod
     def _result(filename, face_count, metrics, level, events, score):

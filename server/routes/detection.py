@@ -1,6 +1,7 @@
 import base64
 import binascii
 import tempfile
+import uuid
 from pathlib import Path
 
 import cv2
@@ -50,7 +51,8 @@ def detect_frame():
         return jsonify(error="视频帧编码无效"), 400
     if not content:
         return jsonify(error="视频帧不能为空"), 400
-    result = current_app.extensions["detector"].detect_frame(content)
+    session_id = str(payload.get("session_id") or "default")[:128]
+    result = current_app.extensions["detector"].detect_frame(content, session_id=session_id)
     return jsonify(result=result, alert=result["level"] == "severe")
 
 
@@ -74,6 +76,7 @@ def detect_video():
         interval = max(1, round(fps / 5))
         results = []
         frame_index = 0
+        session_id = f"video-{uuid.uuid4()}"
         while len(results) < 300:
             ok, frame = capture.read()
             if not ok:
@@ -81,7 +84,11 @@ def detect_video():
             if frame_index % interval == 0:
                 encoded, buffer = cv2.imencode(".jpg", frame)
                 if encoded:
-                    results.append(current_app.extensions["detector"].detect_frame(buffer.tobytes()))
+                    results.append(
+                        current_app.extensions["detector"].detect_frame(
+                            buffer.tobytes(), session_id=session_id, timestamp=frame_index / fps
+                        )
+                    )
             frame_index += 1
         capture.release()
         if not results:

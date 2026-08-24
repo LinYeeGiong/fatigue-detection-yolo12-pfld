@@ -23,7 +23,7 @@ class FakeDetector:
             "metrics": {"ear": 0.12 if level == "severe" else 0.31, "mar": 0.22, "pitch": 2.0},
         }
 
-    def detect_frame(self, content: bytes) -> dict:
+    def detect_frame(self, content: bytes, session_id="default", timestamp=None) -> dict:
         return self.detect_image(content, "camera.jpg")
 
 
@@ -116,3 +116,31 @@ def test_video_upload_analyzes_sampled_frames(tmp_path):
     assert payload["status"] == "completed"
     assert payload["analyzed_frames"] == 3
     assert payload["record"]["source_type"] == "video"
+
+
+def test_video_uses_media_timestamps_not_processing_clock(tmp_path):
+    class TimestampDetector(FakeDetector):
+        def __init__(self):
+            self.timestamps = []
+
+        def detect_frame(self, content, session_id="default", timestamp=None):
+            self.timestamps.append((session_id, timestamp))
+            return super().detect_frame(content, session_id, timestamp)
+
+    path = tmp_path / "timeline.avi"
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"MJPG"), 2, (64, 48))
+    for value in range(4):
+        writer.write(np.full((48, 64, 3), value * 20, dtype=np.uint8))
+    writer.release()
+    detector = TimestampDetector()
+    app = create_app({"TESTING": True, "DATA_DIR": tmp_path / "data"}, detector=detector)
+
+    response = app.test_client().post(
+        "/api/detect/video",
+        data={"file": (io.BytesIO(path.read_bytes()), "timeline.avi")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert [round(item[1], 1) for item in detector.timestamps] == [0.0, 0.5, 1.0, 1.5]
+    assert len({item[0] for item in detector.timestamps}) == 1
