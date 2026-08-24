@@ -41,8 +41,10 @@ def create_app(config: dict | None = None, detector=None) -> Flask:
     )
 
     from server.routes.detection import bp as detection_bp
+    from server.routes.analytics import bp as analytics_bp
 
     app.register_blueprint(detection_bp)
+    app.register_blueprint(analytics_bp)
 
     @app.get("/api/health")
     def health():
