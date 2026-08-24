@@ -1,30 +1,38 @@
-# Fatigue Detection Desktop Design
+# Driver Fatigue Monitoring Desktop Design
 
 ## Goal
 
-Deliver a Windows desktop fatigue-monitoring system using existing YOLO11-face and PFLD weights without retraining. Electron hosts the reused Flask web experience; the same backend can run through Docker for browser access.
+Deliver a Windows desktop application that detects closed eyes, yawning, and head-down behavior from images, uploaded videos, and a camera. The system uses the existing inference weights without retraining, classifies risk as normal, mild, moderate, or severe, and provides reviewable records and analysis exports.
+
+## Product Experience
+
+The application is an operational monitoring tool, not a model demonstration. User-facing pages must not mention model families, framework names, demo modes, or training claims. The persistent navigation contains Overview, Detection Center, Analysis Center, and History. The visual system uses a light neutral workspace, a dark compact sidebar, blue primary actions, and green, amber, orange, and red semantic risk colors. Layouts target 1280x800 and 1440x900 while remaining usable at 375px. Focus states, non-color chart labels, loading states, empty states, errors, and reduced-motion behavior are required.
+
+## Detection Workflows
+
+- Batch images are uploaded together and return an annotated result, fatigue level, risk score, events, and EAR/MAR/Pitch values for each image.
+- Uploaded video creates a processing job. A server-sent events endpoint reads every decodable frame in order, performs inference with a unique temporal session and the frame's media timestamp, and emits the annotated JPEG, frame number, total frames, progress, media time, level, events, metrics, latency, and effective processing FPS. The browser continuously replaces the displayed processed frame. No sampling interval or analyzed-frame cap is allowed.
+- Camera monitoring retains the local preview used for capture but presents the annotated server result as the primary visible output. Requests are serialized to avoid overlapping inference.
+- Severe results open a clear safety warning. Disconnect or cancellation closes the video capture and removes temporary uploads.
+
+## Persistence And Analytics
+
+Each completed image or video task is stored in SQLite. Video details include duration, total and processed frames, elapsed processing time, average latency/FPS, event counts, warning count, level distribution, and a downsampled metric timeline suitable for charts. Existing databases remain readable.
+
+The Analysis Center shows total tasks, fatigue rate, average throughput and latency, risk distribution, behavior-event distribution, input-source distribution, daily task trend, metric trend, recent high-risk records, and per-video experiment details. It must distinguish measured throughput from model accuracy: without labeled ground truth the UI does not show mAP, precision, recall, or warning accuracy.
+
+Exports include filtered record data as UTF-8 BOM CSV, analysis chart canvases as PNG, and a print-optimized report that Electron or the browser can save as PDF. Exported values come from persisted detections only.
 
 ## Architecture
 
-`desktop/` owns the Electron lifecycle and starts a packaged Python sidecar on a free localhost port. `server/` owns HTTP endpoints, persistence, uploads, inference adapters, and time-based fatigue classification. The browser UI never accesses model files directly. In development, a deterministic demo detector keeps UI and automated tests runnable without loading heavyweight models; production selects the existing model adapter when compatible weights and runtime are available.
+`server/services/video_jobs.py` owns temporary video jobs and SSE frame generation. `server/services/storage.py` owns records and aggregation queries. `server/routes/detection.py` owns detection and job endpoints, while a focused analytics blueprint owns summary and CSV endpoints. The plain JavaScript frontend separates shared shell behavior, detection streaming, chart rendering, and history rendering where practical. Charts use a locally bundled library so Electron and Docker require no internet access.
 
-## Functional Scope
+Electron starts the packaged Python service on localhost and stores writable data in its user-data directory. CPU is the acceptance baseline; an available CUDA provider may be used automatically. Docker Compose remains an additional CPU-first deployment option.
 
-- Dashboard with runtime device, service health, recent totals, and direct detection actions.
-- Batch image upload, video upload/analysis, and webcam frame analysis.
-- Observable events: prolonged eye closure, yawning, and head-down posture. “Distracted gaze” is excluded.
-- Levels: normal, mild, moderate, and severe, computed from duration and event frequency in a rolling time window.
-- Visible severe warning, history records, result detail, and summary charts.
-- CPU is the required baseline. CUDA is detected and used when available; inability to use CUDA must fall back to CPU.
+## Error Handling And Verification
 
-## Desktop And Deployment
+Invalid uploads return Chinese 4xx messages. SSE emits a structured error event before cleanup when decoding or inference fails. Jobs reject duplicate consumers and expose cancellation. Automated tests prove every source frame is processed once and in order, media timestamps are preserved, completion records contain analysis data, aggregations and CSV are correct, and pages contain the required controls without forbidden implementation labels. Browser and Electron checks cover live frame replacement, charts, exports, warnings, responsive layout, and application shutdown.
 
-Electron waits for `/api/health`, opens only localhost URLs, terminates the sidecar on exit, and stores writable data under the user-data directory. Windows packaging includes the Electron shell and a PyInstaller-built server. Docker Compose provides a CPU image; an optional GPU override is documented but not required for acceptance.
+## Deliverables
 
-## Visual Direction
-
-Use a quiet operations-dashboard layout with restrained charcoal, white, green status, amber caution, and red danger tokens. Navigation is persistent, detection controls remain above the fold, charts use labels as well as color, keyboard focus is visible, and motion respects `prefers-reduced-motion`. Cards are used only for discrete metrics or tools and are not nested.
-
-## Verification And Deliverables
-
-Automated tests cover fatigue classification, configuration, health, upload validation, and desktop process utilities. Browser checks cover dashboard, batch images, video, camera error state, history, and warning display. Delivery includes source, model placement instructions, Windows build scripts, Docker files, sample inputs, a concise Chinese user guide, and an演示 checklist. Model accuracy or YOLO12 training claims are explicitly excluded.
+Delivery includes source code, Windows installer, CPU Docker configuration with optional GPU override, a concise Chinese usage/acceptance guide, and demonstration material. It makes no claim of retraining or unsupported accuracy improvement.
