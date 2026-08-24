@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block heading %}历史记录{% endblock %}
+{% block content %}
+<section class="table-panel"><div class="section-head"><div><h2>检测记录</h2><p>图片、视频任务及最终风险等级。</p></div><button id="history-refresh" class="button secondary">刷新</button></div><div class="table-scroll"><table><thead><tr><th>时间</th><th>来源</th><th>文件</th><th>等级</th><th>分值</th></tr></thead><tbody id="history-body"><tr class="empty-row"><td colspan="5">暂无检测记录</td></tr></tbody></table></div></section>
+{% endblock %}

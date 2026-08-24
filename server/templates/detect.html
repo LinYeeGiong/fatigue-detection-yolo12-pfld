@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block heading %}检测中心{% endblock %}
+{% block content %}
+<div class="segmented" role="tablist" aria-label="输入来源">
+  <button class="active" data-panel="images" role="tab">批量图片</button>
+  <button data-panel="video" role="tab">视频分析</button>
+  <button data-panel="camera" role="tab">实时监测</button>
+</div>
+<section id="images" class="detect-panel active">
+  <div class="tool-pane">
+    <h2>批量图片检测</h2><p>支持 JPG、PNG、WEBP、BMP，可一次选择多张。</p>
+    <label class="drop-zone" for="image-files"><strong>选择驾驶员图片</strong><span>支持多选，单次总大小不超过 100 MB</span></label>
+    <input id="image-files" type="file" accept="image/jpeg,image/png,image/webp,image/bmp" multiple hidden>
+    <button id="image-submit" class="button primary" type="button">开始检测</button>
+  </div>
+  <div class="result-pane"><div class="empty-state" id="image-empty"><strong>等待图片</strong><span>检测结果将在这里按图片展示</span></div><div id="image-results" class="result-grid"></div></div>
+</section>
+<section id="video" class="detect-panel">
+  <div class="tool-pane"><h2>视频分析</h2><p>支持 MP4、AVI、MOV、MKV、WEBM。</p><label class="drop-zone" for="video-file"><strong>选择驾驶视频</strong><span id="video-name">尚未选择文件</span></label><input id="video-file" type="file" accept="video/*" hidden><button id="video-submit" class="button primary" type="button">提交分析</button></div>
+  <div class="result-pane"><video id="video-preview" controls></video><div id="video-status" class="empty-state"><strong>等待视频</strong><span>上传后显示任务状态</span></div></div>
+</section>
+<section id="camera" class="detect-panel">
+  <div class="tool-pane"><h2>实时监测</h2><p>摄像头画面仅在本机处理，每 500 ms 采样一次。</p><button id="camera-start" class="button primary" type="button">启动摄像头</button><button id="camera-stop" class="button secondary" type="button" disabled>停止</button><div id="camera-metrics" class="live-metrics"><span>EAR <strong>--</strong></span><span>MAR <strong>--</strong></span><span>Pitch <strong>--</strong></span></div></div>
+  <div class="result-pane camera-stage"><video id="camera-preview" autoplay muted playsinline></video><canvas id="camera-canvas" hidden></canvas><span id="camera-level" class="level normal">正常</span></div>
+</section>
+<div id="severe-alert" class="alert-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" hidden><div><p class="eyebrow">安全预警</p><h2 id="alert-title">检测到重度疲劳</h2><p>请立即停止驾驶并安全休息。</p><button id="alert-close" class="button danger" type="button">我已知晓</button></div></div>
+{% endblock %}

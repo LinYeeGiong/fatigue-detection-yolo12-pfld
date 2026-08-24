@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
 from server.services.detector import DemoDetector
 from server.services.storage import RecordStore
@@ -32,6 +32,18 @@ def create_app(config: dict | None = None, detector=None) -> Flask:
             detector=runtime.name,
             device=runtime.device,
         )
+
+    @app.get("/")
+    def dashboard():
+        return render_template("dashboard.html", page="dashboard", detector=app.extensions["detector"])
+
+    @app.get("/detect")
+    def detect_page():
+        return render_template("detect.html", page="detect", detector=app.extensions["detector"])
+
+    @app.get("/history")
+    def history_page():
+        return render_template("history.html", page="history", detector=app.extensions["detector"])
 
     return app
 

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block heading %}运行总览{% endblock %}
+{% block content %}
+<section class="metrics" aria-label="系统指标">
+  <article class="metric"><span>服务状态</span><strong>在线</strong><small>{{ detector.name }}</small></article>
+  <article class="metric"><span>当前设备</span><strong>{{ detector.device|upper }}</strong><small>不可用时自动回退 CPU</small></article>
+  <article class="metric"><span>风险等级</span><strong>4 级</strong><small>正常 / 轻度 / 中度 / 重度</small></article>
+  <article class="metric"><span>检测行为</span><strong>3 类</strong><small>闭眼 / 哈欠 / 低头</small></article>
+</section>
+<section class="section-head"><div><h2>开始检测</h2><p>选择输入来源进入统一检测工作区。</p></div></section>
+<section class="workflow-grid">
+  <a class="workflow" href="/detect#images"><span class="workflow-index">01</span><h3>批量图片</h3><p>一次选择多张驾驶员图片，逐项查看疲劳等级与指标。</p><span class="action-link">开始处理 →</span></a>
+  <a class="workflow" href="/detect#video"><span class="workflow-index">02</span><h3>视频分析</h3><p>上传车内驾驶视频，建立检测记录并输出分析状态。</p><span class="action-link">选择视频 →</span></a>
+  <a class="workflow" href="/detect#camera"><span class="workflow-index">03</span><h3>实时监测</h3><p>调用本机摄像头，持续分析闭眼、哈欠与低头行为。</p><span class="action-link">打开摄像头 →</span></a>
+</section>
+<section class="notice"><strong>验收口径</strong><p>系统使用现有 YOLO11-face 与 PFLD 权重，不包含重新训练或 YOLO12 精度提升声明。</p></section>
+{% endblock %}
