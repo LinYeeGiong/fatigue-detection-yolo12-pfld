@@ -1,4 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const severeNotifier = createSevereNotifier({
+    element: $("#severe-alert"),
+  });
+  $("#alert-close")?.addEventListener("click", severeNotifier.dismiss);
+  let showPose = false;
+  const poseToggle = $("#pose-overlay-toggle");
+  poseToggle?.addEventListener("click", () => {
+    showPose = !showPose;
+    poseToggle.setAttribute("aria-pressed", String(showPose));
+    poseToggle.classList.toggle("active", showPose);
+    $("#pose-overlay-toggle span").textContent = showPose
+      ? "隐藏位姿"
+      : "显示位姿";
+  });
+
   $$(".segmented button").forEach((button) =>
     button.addEventListener("click", () => {
       $$(".segmented button").forEach((item) => {
@@ -23,11 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   $("#image-submit")?.addEventListener("click", async () => {
     if (!images.files.length) return toast("请先选择图片");
+    severeNotifier.reset("images");
     const button = $("#image-submit");
     button.disabled = true;
     button.innerHTML = '<span class="spinner"></span>正在检测';
     const data = new FormData();
     [...images.files].forEach((file) => data.append("files", file));
+    data.append("show_pose", String(showPose));
     try {
       const body = await jsonRequest("/api/detect/images", {
         method: "POST",
@@ -37,10 +54,10 @@ document.addEventListener("DOMContentLoaded", () => {
       $("#image-results").innerHTML = body.results
         .map(
           (item, index) =>
-            `<article class="result-card"><img src="${item.processed_image || URL.createObjectURL(images.files[index])}" alt="${escapeHtml(item.filename)} 检测结果"><div><div class="result-card-head">${levelBadge(item.level)}<strong>${item.score} 分</strong></div><h3>${escapeHtml(item.filename)}</h3><dl><div><dt>EAR</dt><dd>${item.metrics.ear.toFixed(3)}</dd></div><div><dt>MAR</dt><dd>${item.metrics.mar.toFixed(3)}</dd></div><div><dt>俯仰角</dt><dd>${item.metrics.pitch.toFixed(1)}°</dd></div></dl></div></article>`,
+            `<article class="result-card"><img src="${item.processed_image || URL.createObjectURL(images.files[index])}" alt="${escapeHtml(item.filename)} 检测结果"><div><div class="result-card-head">${levelBadge(item.level)}<strong>${item.score} 分</strong></div><h3>${escapeHtml(item.filename)}</h3><dl><div><dt>EAR</dt><dd>${item.metrics.ear.toFixed(3)}</dd></div><div><dt>MAR</dt><dd>${item.metrics.mar.toFixed(3)}</dd></div><div><dt>Pitch</dt><dd>${(item.metrics.pitch ?? 0).toFixed(1)}°</dd></div><div><dt>Roll</dt><dd>${(item.metrics.roll ?? 0).toFixed(1)}°</dd></div><div><dt>Yaw</dt><dd>${(item.metrics.yaw ?? 0).toFixed(1)}°</dd></div></dl></div></article>`,
         )
         .join("");
-      if (body.alert) showAlert();
+      severeNotifier.update("images", body.alert ? "severe" : "normal");
     } catch (error) {
       toast(error.message);
     } finally {
@@ -58,9 +75,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   $("#video-submit")?.addEventListener("click", async () => {
     if (!videoFile.files.length) return toast("请先选择视频");
+    severeNotifier.reset("video");
     resetVideoView();
     const data = new FormData();
     data.append("file", videoFile.files[0]);
+    data.append("show_pose", String(showPose));
     setVideoBusy(true, "正在上传");
     try {
       videoJob = await jsonRequest("/api/detect/video", {
@@ -115,6 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
       frame.metrics.ear.toFixed(3),
       frame.metrics.mar.toFixed(3),
       `${frame.metrics.pitch.toFixed(1)}°`,
+      `${(frame.metrics.roll ?? 0).toFixed(1)}°`,
+      `${(frame.metrics.yaw ?? 0).toFixed(1)}°`,
       `${frame.processing_fps.toFixed(1)} FPS`,
       `${frame.latency_ms.toFixed(0)} ms`,
       `${frame.media_time.toFixed(1)} s`,
@@ -124,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `检测到：${frame.events.map((name) => eventLabels[name]).join("、")}`
       : "当前画面状态正常";
     $("#video-status small").textContent = `正在处理第 ${frame.frame_index} 帧`;
-    if (frame.level === "severe") showAlert();
+    severeNotifier.update("video", frame.level);
   }
 
   function finishVideo(data) {
@@ -137,7 +158,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("#video-phase").textContent = "分析完成";
     $("#video-status").innerHTML =
       `<span>${levelBadge(data.level)}<strong>已完成 ${data.processed_frames} 帧</strong></span><small>平均 ${data.average_fps} FPS · ${data.average_latency_ms} ms/帧 · 记录 #${data.record.id}</small>`;
-    if (data.level === "severe") showAlert();
   }
 
   function finishVideoCancelled() {
@@ -182,6 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let cameraBusy = false;
   $("#camera-start")?.addEventListener("click", async () => {
     try {
+      severeNotifier.reset("camera");
       cameraSession = crypto.randomUUID();
       cameraStream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -215,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({
           frame: canvas.toDataURL("image/jpeg", 0.82),
           session_id: cameraSession,
+          show_pose: showPose,
         }),
       });
       const result = body.result;
@@ -228,9 +250,11 @@ document.addEventListener("DOMContentLoaded", () => {
         result.metrics.ear.toFixed(3),
         result.metrics.mar.toFixed(3),
         `${result.metrics.pitch.toFixed(1)}°`,
+        `${(result.metrics.roll ?? 0).toFixed(1)}°`,
+        `${(result.metrics.yaw ?? 0).toFixed(1)}°`,
       ].forEach((value, index) => (values[index].textContent = value));
       updateLevel($("#camera-level"), result.level);
-      if (body.alert) showAlert();
+      severeNotifier.update("camera", result.level);
     } catch (error) {
       toast(error.message);
     } finally {
@@ -244,6 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cameraStream?.getTracks().forEach((track) => track.stop());
     cameraStream = null;
     cameraSession = null;
+    severeNotifier.reset("camera");
     $("#camera-preview")?.classList.remove("active");
     if ($("#camera-start")) $("#camera-start").disabled = false;
     if ($("#camera-stop")) $("#camera-stop").disabled = true;
@@ -254,14 +279,6 @@ document.addEventListener("DOMContentLoaded", () => {
     node.className = `level ${level}`;
     node.innerHTML = `<i class="level-dot"></i>${levelLabels[level]}`;
   }
-  function showAlert() {
-    $("#severe-alert").hidden = false;
-    $("#alert-close").focus();
-  }
-  $("#alert-close")?.addEventListener(
-    "click",
-    () => ($("#severe-alert").hidden = true),
-  );
   window.addEventListener("beforeunload", () => {
     if (videoJob)
       fetch(`/api/detect/video/${videoJob.job_id}`, {

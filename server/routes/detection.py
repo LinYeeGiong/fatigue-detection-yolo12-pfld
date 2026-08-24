@@ -13,6 +13,10 @@ IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "bmp"}
 VIDEO_EXTENSIONS = {"mp4", "avi", "mov", "mkv", "webm"}
 
 
+def _is_true(value) -> bool:
+    return value is True or str(value).lower() in {"1", "true", "yes", "on"}
+
+
 def _extension(filename: str) -> str:
     return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
@@ -28,10 +32,14 @@ def detect_images():
 
     detector = current_app.extensions["detector"]
     store = current_app.extensions["record_store"]
+    show_pose = _is_true(request.form.get("show_pose"))
     results = []
     for item in files:
         filename = secure_filename(item.filename) or "image.jpg"
-        result = detector.detect_image(item.read(), filename)
+        if show_pose:
+            result = detector.detect_image(item.read(), filename, show_pose=True)
+        else:
+            result = detector.detect_image(item.read(), filename)
         result["record"] = store.add("image", filename, result)
         results.append(result)
     return jsonify(results=results, alert=any(item["level"] == "severe" for item in results))
@@ -50,7 +58,11 @@ def detect_frame():
     if not content:
         return jsonify(error="视频帧不能为空"), 400
     session_id = str(payload.get("session_id") or "default")[:128]
-    result = current_app.extensions["detector"].detect_frame(content, session_id=session_id)
+    detector = current_app.extensions["detector"]
+    if _is_true(payload.get("show_pose")):
+        result = detector.detect_frame(content, session_id=session_id, show_pose=True)
+    else:
+        result = detector.detect_frame(content, session_id=session_id)
     return jsonify(result=result, alert=result["level"] == "severe")
 
 
@@ -63,7 +75,11 @@ def detect_video():
         return jsonify(error=f"不支持的视频格式: {item.filename}"), 400
     filename = secure_filename(item.filename) or "video.mp4"
     try:
-        job = current_app.extensions["video_jobs"].create(item, filename)
+        job = current_app.extensions["video_jobs"].create(
+            item,
+            filename,
+            show_pose=_is_true(request.form.get("show_pose")),
+        )
     except ValueError as error:
         return jsonify(error=str(error)), 400
     job["stream_url"] = url_for("detection_api.video_events", job_id=job["job_id"])

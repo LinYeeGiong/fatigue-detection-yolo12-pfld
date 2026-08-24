@@ -599,6 +599,20 @@ td {
   border-radius: 7px;
   margin-bottom: 14px;
 }
+.detect-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pose-toggle {
+  flex: 0 0 auto;
+}
+.pose-toggle.active {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: #b9cef9;
+}
 .segmented button {
   height: 40px;
   padding: 0 16px;
@@ -964,45 +978,107 @@ td {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
-.alert-dialog {
+.fatigue-notification {
   position: fixed;
-  inset: 0;
-  background: rgba(12, 18, 28, 0.68);
+  top: 86px;
+  right: 24px;
+  z-index: 40;
+  width: min(380px, calc(100vw - 32px));
+  min-height: 108px;
+  padding: 16px 54px 17px 16px;
   display: grid;
-  place-items: center;
-  padding: 20px;
-  z-index: 20;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  overflow: hidden;
+  color: #172033;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(220, 60, 77, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 16px 42px rgba(16, 24, 40, 0.2), 0 2px 8px rgba(16, 24, 40, 0.08);
+  backdrop-filter: blur(16px);
+  transform: translate3d(22px, -8px, 0);
+  opacity: 0;
+  pointer-events: none;
 }
-.alert-dialog[hidden] {
+.fatigue-notification[hidden] {
   display: none;
 }
-.alert-dialog > div {
-  width: min(390px, 100%);
-  padding: 28px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
-  text-align: center;
+.fatigue-notification.is-visible {
+  animation: notification-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  pointer-events: auto;
 }
-.alert-icon {
-  width: 54px;
-  height: 54px;
-  margin: 0 auto 15px;
-  border-radius: 50%;
+.notification-icon {
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  background: var(--red-soft);
   color: var(--red);
+  background: var(--red-soft);
+  border-radius: 50%;
 }
-.alert-icon svg {
-  width: 26px;
+.notification-icon svg {
+  width: 20px;
 }
-.alert-dialog h2 {
-  font-size: 20px;
+.notification-copy > span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 700;
 }
-.alert-dialog p {
+.notification-copy h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+.notification-copy p {
+  margin: 0;
   color: var(--muted);
-  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.notification-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #667085;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.notification-close:hover,
+.notification-close:focus-visible {
+  color: #172033;
+  background: #f1f4f8;
+}
+.notification-close svg {
+  width: 17px;
+}
+.notification-timer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--red);
+  transform-origin: left;
+  animation: none;
+}
+.fatigue-notification.is-visible .notification-timer {
+  animation: notification-timer 8s linear forwards;
+}
+@keyframes notification-in {
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+@keyframes notification-timer {
+  to { transform: scaleX(0); }
 }
 .chart-grid {
   display: grid;
@@ -1314,6 +1390,22 @@ td {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+  }
+  .detect-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 14px;
+  }
+  .detect-toolbar .segmented {
+    margin-bottom: 0;
+  }
+  .pose-toggle {
+    width: 100%;
+  }
+  .fatigue-notification {
+    top: 76px;
+    right: 12px;
+    width: calc(100vw - 24px);
   }
   .segmented button {
     padding: 0 5px;

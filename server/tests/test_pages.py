@@ -23,7 +23,7 @@ def test_dashboard_exposes_status_and_primary_workflows(tmp_path):
     assert "实时监测" in html
 
 
-def test_detection_workspace_has_accessible_controls_and_alert(tmp_path):
+def test_detection_workspace_has_accessible_controls_and_nonblocking_alert(tmp_path):
     response = make_client(tmp_path).get("/detect")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
@@ -35,7 +35,14 @@ def test_detection_workspace_has_accessible_controls_and_alert(tmp_path):
     assert 'id="video-progress"' in html
     assert 'id="video-cancel"' in html
     assert 'id="camera-processed"' in html
-    assert 'role="alertdialog"' in html
+    assert 'id="pose-overlay-toggle"' in html
+    assert 'aria-pressed="false"' in html
+    assert 'id="severe-alert"' in html
+    assert 'role="alert"' in html
+    assert 'id="alert-close"' in html
+    assert 'aria-label="关闭疲劳预警"' in html
+    assert 'role="alertdialog"' not in html
+    assert 'aria-modal="true"' not in html
     assert "抽帧" not in html
 
 

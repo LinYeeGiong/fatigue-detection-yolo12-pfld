@@ -22,7 +22,7 @@ class VideoJobManager:
         self._jobs = {}
         self._lock = threading.Lock()
 
-    def create(self, uploaded_file, filename: str) -> dict:
+    def create(self, uploaded_file, filename: str, show_pose: bool = False) -> dict:
         job_id = uuid.uuid4().hex
         suffix = Path(filename).suffix.lower()
         path = self.upload_dir / f"{job_id}{suffix}"
@@ -46,6 +46,7 @@ class VideoJobManager:
             "height": height,
             "cancelled": False,
             "consumed": False,
+            "show_pose": show_pose,
         }
         with self._lock:
             self._jobs[job_id] = job
@@ -88,11 +89,13 @@ class VideoJobManager:
                 if not encoded:
                     continue
                 frame_started = time.perf_counter()
-                result = self.detector.detect_frame(
-                    buffer.tobytes(),
-                    session_id=f"video-{job_id}",
-                    timestamp=source_index / job["fps"],
-                )
+                detect_options = {
+                    "session_id": f"video-{job_id}",
+                    "timestamp": source_index / job["fps"],
+                }
+                if job["show_pose"]:
+                    detect_options["show_pose"] = True
+                result = self.detector.detect_frame(buffer.tobytes(), **detect_options)
                 latency_ms = (time.perf_counter() - frame_started) * 1000
                 processed += 1
                 latencies.append(latency_ms)

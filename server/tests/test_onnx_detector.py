@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import numpy as np
@@ -44,3 +45,28 @@ def test_frame_state_is_isolated_by_session_and_no_face_clears_active_state():
     detector._detect_faces = lambda image: [(0, 0, 10, 10)]
     reset = detector.detect_frame(b"x", session_id="driver-a", timestamp=8)
     assert reset["level"] == "normal"
+
+
+def test_landmark_metrics_expose_three_axis_pose_and_absolute_points():
+    class PfldSession:
+        def get_inputs(self):
+            return [SimpleNamespace(name="input")]
+
+        def run(self, output_names, inputs):
+            pose = np.array([[0.1, 0.2, 0.3]], dtype=np.float32)
+            points = np.tile(np.array([0.5, 0.5], dtype=np.float32), 98)[None]
+            return pose, points
+
+    detector = OnnxDetector.__new__(OnnxDetector)
+    detector.pfld_session = PfldSession()
+
+    metrics = detector._landmark_metrics(
+        np.zeros((200, 200, 3), dtype=np.uint8),
+        (50, 50, 150, 150),
+    )
+
+    assert metrics["yaw"] == pytest.approx(5.73, abs=0.01)
+    assert metrics["pitch"] == pytest.approx(11.46, abs=0.01)
+    assert metrics["roll"] == pytest.approx(17.19, abs=0.01)
+    assert len(metrics["landmarks"]) == 98
+    assert metrics["landmarks"][0] == (100, 100)

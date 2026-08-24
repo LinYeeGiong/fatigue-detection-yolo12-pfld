@@ -26,24 +26,30 @@ class OnnxDetector:
         self._classifiers = OrderedDict()
         self._classifier_lock = threading.Lock()
 
-    def detect_image(self, content: bytes, filename: str) -> dict:
+    def detect_image(self, content: bytes, filename: str, show_pose: bool = False) -> dict:
         image = self._decode(content)
         faces = self._detect_faces(image)
         details = [self._landmark_metrics(image, box) for box in faces]
         details = [item for item in details if item is not None]
         if not details:
             result = self._result(filename, 0, None, "normal", [], 0)
-            result["processed_image"] = self._annotate(image, [], [], "normal")
+            result["processed_image"] = self._annotate(image, [], [], "normal", show_pose)
             return result
         metrics = details[0]
         events = self._events(metrics)
         level = "moderate" if len(events) >= 2 else "mild" if events else "normal"
         score = {"normal": 10, "mild": 45, "moderate": 70}[level]
         result = self._result(filename, len(details), metrics, level, events, score)
-        result["processed_image"] = self._annotate(image, faces, details, level)
+        result["processed_image"] = self._annotate(image, faces, details, level, show_pose)
         return result
 
-    def detect_frame(self, content: bytes, session_id: str = "default", timestamp: float | None = None) -> dict:
+    def detect_frame(
+        self,
+        content: bytes,
+        session_id: str = "default",
+        timestamp: float | None = None,
+        show_pose: bool = False,
+    ) -> dict:
         image = self._decode(content)
         faces = self._detect_faces(image)
         details = [self._landmark_metrics(image, box) for box in faces]
@@ -52,7 +58,7 @@ class OnnxDetector:
         if not details:
             snapshot = self._update_session(session_id, Observation(), timestamp)
             result = self._result("camera.jpg", 0, None, snapshot.level, [], snapshot.score)
-            result["processed_image"] = self._annotate(image, [], [], snapshot.level)
+            result["processed_image"] = self._annotate(image, [], [], snapshot.level, show_pose)
             return result
         metrics = details[0]
         events = self._events(metrics)
@@ -62,12 +68,14 @@ class OnnxDetector:
                 eyes_closed="eye_closed" in events,
                 yawning="yawn" in events,
                 head_down="head_down" in events,
-                **metrics,
+                ear=metrics["ear"],
+                mar=metrics["mar"],
+                pitch=metrics["pitch"],
             ),
             timestamp,
         )
         result = self._result("camera.jpg", len(details), metrics, snapshot.level, events, snapshot.score)
-        result["processed_image"] = self._annotate(image, faces, details, snapshot.level)
+        result["processed_image"] = self._annotate(image, faces, details, snapshot.level, show_pose)
         return result
 
     def _update_session(self, session_id: str, observation: Observation, timestamp: float):
@@ -134,10 +142,20 @@ class OnnxDetector:
         face = cv2.resize(roi, (112, 112))[:, :, ::-1].transpose(2, 0, 1).astype(np.float32)[None] / 255.0
         pose, landmarks = self.pfld_session.run(None, {self.pfld_session.get_inputs()[0].name: face})
         points = landmarks[0].reshape(98, 2)
+        absolute_points = [
+            (
+                int(round(x1 + float(point[0]) * (x2 - x1))),
+                int(round(y1 + float(point[1]) * (y2 - y1))),
+            )
+            for point in points
+        ]
         return {
             "ear": float(self._ear(points)),
             "mar": float(self._mar(points)),
+            "yaw": float(np.degrees(pose[0][0])),
             "pitch": float(np.degrees(pose[0][1])),
+            "roll": float(np.degrees(pose[0][2])),
+            "landmarks": absolute_points,
         }
 
     @staticmethod
@@ -167,7 +185,7 @@ class OnnxDetector:
         return events
 
     @staticmethod
-    def _annotate(image: np.ndarray, boxes, details, level: str) -> str:
+    def _annotate(image: np.ndarray, boxes, details, level: str, show_pose: bool = False) -> str:
         canvas = image.copy()
         color = (40, 200, 90) if level == "normal" else (40, 170, 255) if level != "severe" else (50, 50, 240)
         for box, metrics in zip(boxes, details):
@@ -175,6 +193,23 @@ class OnnxDetector:
             cv2.rectangle(canvas, (x1, y1), (x2, y2), color, 2)
             text = f"{level.upper()}  EAR {metrics['ear']:.2f}  MAR {metrics['mar']:.2f}"
             cv2.putText(canvas, text, (x1, max(24, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2, cv2.LINE_AA)
+            if show_pose:
+                for point in metrics.get("landmarks", []):
+                    cv2.circle(canvas, point, 1, (255, 210, 40), -1, cv2.LINE_AA)
+                pose_text = (
+                    f"P {metrics.get('pitch', 0):.1f}  "
+                    f"R {metrics.get('roll', 0):.1f}  Y {metrics.get('yaw', 0):.1f}"
+                )
+                cv2.putText(
+                    canvas,
+                    pose_text,
+                    (x1, min(image.shape[0] - 8, y2 + 20)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.52,
+                    (255, 210, 40),
+                    2,
+                    cv2.LINE_AA,
+                )
         encoded, buffer = cv2.imencode(".jpg", canvas, [cv2.IMWRITE_JPEG_QUALITY, 88])
         if not encoded:
             return ""
@@ -182,12 +217,16 @@ class OnnxDetector:
 
     @staticmethod
     def _result(filename, face_count, metrics, level, events, score):
+        public_metrics = {
+            name: float((metrics or {}).get(name, 0.0))
+            for name in ("ear", "mar", "pitch", "roll", "yaw")
+        }
         return {
             "filename": filename,
             "face_count": face_count,
             "level": level,
             "score": score,
             "events": events,
-            "metrics": metrics or {"ear": 0.0, "mar": 0.0, "pitch": 0.0},
+            "metrics": public_metrics,
             "mode": "onnx",
         }

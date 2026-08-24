@@ -73,6 +73,37 @@ def test_frame_detection_accepts_data_url(tmp_path):
     assert response.get_json()["result"]["level"] == "normal"
 
 
+def test_pose_overlay_option_reaches_image_and_frame_detector(tmp_path):
+    class PoseDetector(FakeDetector):
+        def __init__(self):
+            self.calls = []
+
+        def detect_image(self, content, filename, show_pose=False):
+            self.calls.append(("image", show_pose))
+            return super().detect_image(content, filename)
+
+        def detect_frame(self, content, session_id="default", timestamp=None, show_pose=False):
+            self.calls.append(("frame", show_pose))
+            return FakeDetector.detect_image(self, content, "camera.jpg")
+
+    detector = PoseDetector()
+    app = create_app({"TESTING": True, "DATA_DIR": tmp_path}, detector=detector)
+    client = app.test_client()
+
+    client.post(
+        "/api/detect/images",
+        data={"files": (io.BytesIO(b"normal"), "normal.jpg"), "show_pose": "true"},
+        content_type="multipart/form-data",
+    )
+    encoded = base64.b64encode(b"frame").decode("ascii")
+    client.post(
+        "/api/detect/frame",
+        json={"frame": encoded, "show_pose": True},
+    )
+
+    assert detector.calls == [("image", True), ("frame", True)]
+
+
 def test_detection_records_are_persisted(tmp_path):
     client = make_client(tmp_path)
     client.post(

@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block heading %}检测中心{% endblock %}
 {% block content %}
-<div class="segmented" role="tablist" aria-label="输入来源">
-  <button class="active" data-panel="images" role="tab" aria-selected="true"><i data-lucide="images" aria-hidden="true"></i>批量图片</button>
-  <button data-panel="video" role="tab" aria-selected="false"><i data-lucide="video" aria-hidden="true"></i>视频分析</button>
-  <button data-panel="camera" role="tab" aria-selected="false"><i data-lucide="webcam" aria-hidden="true"></i>实时监测</button>
+<div class="detect-toolbar">
+  <div class="segmented" role="tablist" aria-label="输入来源">
+    <button class="active" data-panel="images" role="tab" aria-selected="true"><i data-lucide="images" aria-hidden="true"></i>批量图片</button>
+    <button data-panel="video" role="tab" aria-selected="false"><i data-lucide="video" aria-hidden="true"></i>视频分析</button>
+    <button data-panel="camera" role="tab" aria-selected="false"><i data-lucide="webcam" aria-hidden="true"></i>实时监测</button>
+  </div>
+  <button id="pose-overlay-toggle" class="button secondary pose-toggle" type="button" aria-pressed="false"><i data-lucide="scan-face" aria-hidden="true"></i><span>显示位姿</span></button>
 </div>
 
 <section id="images" class="detect-panel active" aria-label="批量图片检测">
@@ -24,7 +27,7 @@
     <input id="video-file" type="file" accept="video/mp4,video/x-msvideo,video/quicktime,video/x-matroska,video/webm" hidden>
     <div class="button-row"><button id="video-submit" class="button primary" type="button"><i data-lucide="play" aria-hidden="true"></i>开始分析</button><button id="video-cancel" class="button secondary" type="button" disabled><i data-lucide="square" aria-hidden="true"></i>停止</button></div>
     <div class="progress-group"><div><span id="video-phase">等待视频</span><strong id="video-progress-text">0%</strong></div><progress id="video-progress" max="100" value="0">0%</progress><small id="video-frame-count">0 / 0 帧</small></div>
-    <div class="live-metrics" id="video-metrics"><span>EAR<strong>--</strong></span><span>MAR<strong>--</strong></span><span>俯仰角<strong>--</strong></span><span>处理帧率<strong>--</strong></span><span>单帧延迟<strong>--</strong></span><span>视频时间<strong>--</strong></span></div>
+    <div class="live-metrics" id="video-metrics"><span>EAR<strong>--</strong></span><span>MAR<strong>--</strong></span><span>Pitch<strong>--</strong></span><span>Roll<strong>--</strong></span><span>Yaw<strong>--</strong></span><span>处理帧率<strong>--</strong></span><span>单帧延迟<strong>--</strong></span><span>视频时间<strong>--</strong></span></div>
   </aside>
   <div class="result-pane media-result">
     <div class="media-stage"><img id="video-processed" alt="视频检测后的实时画面" hidden><div id="video-empty" class="empty-state"><span class="empty-icon"><i data-lucide="monitor-play" aria-hidden="true"></i></span><strong>等待视频分析</strong><span>开始后会连续显示每一帧检测画面</span></div><span id="video-level" class="level normal" hidden>正常</span></div>
@@ -36,7 +39,7 @@
   <aside class="tool-pane">
     <div class="tool-title"><span><i data-lucide="webcam" aria-hidden="true"></i></span><div><h2>摄像头实时监测</h2><p>画面在本机持续处理</p></div></div>
     <div class="button-row"><button id="camera-start" class="button primary" type="button"><i data-lucide="camera" aria-hidden="true"></i>启动监测</button><button id="camera-stop" class="button secondary" type="button" disabled><i data-lucide="square" aria-hidden="true"></i>停止</button></div>
-    <div id="camera-metrics" class="live-metrics three"><span>EAR<strong>--</strong></span><span>MAR<strong>--</strong></span><span>俯仰角<strong>--</strong></span></div>
+    <div id="camera-metrics" class="live-metrics three"><span>EAR<strong>--</strong></span><span>MAR<strong>--</strong></span><span>Pitch<strong>--</strong></span><span>Roll<strong>--</strong></span><span>Yaw<strong>--</strong></span></div>
     <div class="event-legend"><span><i class="dot eye"></i>闭眼</span><span><i class="dot yawn"></i>哈欠</span><span><i class="dot head"></i>低头</span></div>
   </aside>
   <div class="result-pane media-result">
@@ -44,6 +47,11 @@
   </div>
 </section>
 
-<div id="severe-alert" class="alert-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" hidden><div><span class="alert-icon"><i data-lucide="triangle-alert" aria-hidden="true"></i></span><h2 id="alert-title">检测到重度疲劳</h2><p>当前状态存在较高驾驶风险，请立即停车并充分休息。</p><button id="alert-close" class="button danger full" type="button">我已知晓</button></div></div>
+<aside id="severe-alert" class="fatigue-notification" role="alert" aria-live="assertive" aria-atomic="true" aria-labelledby="alert-title" hidden>
+  <span class="notification-icon"><i data-lucide="triangle-alert" aria-hidden="true"></i></span>
+  <div class="notification-copy"><span>安全预警</span><h2 id="alert-title">检测到重度疲劳</h2><p>当前状态存在较高驾驶风险，请立即停车并充分休息。</p></div>
+  <button id="alert-close" class="notification-close" type="button" aria-label="关闭疲劳预警"><i data-lucide="x" aria-hidden="true"></i></button>
+  <i class="notification-timer" aria-hidden="true"></i>
+</aside>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/detection.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/severe-notification.js') }}" defer></script><script src="{{ url_for('static', filename='js/detection.js') }}" defer></script>{% endblock %}
