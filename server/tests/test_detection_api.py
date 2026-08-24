@@ -97,7 +97,7 @@ def test_video_upload_requires_supported_file(tmp_path):
     assert response.status_code == 400
 
 
-def test_video_upload_analyzes_sampled_frames(tmp_path):
+def test_video_upload_creates_job_that_analyzes_all_frames(tmp_path):
     path = tmp_path / "sample.avi"
     writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"MJPG"), 5, (64, 48))
     for value in (20, 80, 140):
@@ -112,10 +112,11 @@ def test_video_upload_analyzes_sampled_frames(tmp_path):
     )
 
     payload = response.get_json()
-    assert response.status_code == 200
-    assert payload["status"] == "completed"
-    assert payload["analyzed_frames"] == 3
-    assert payload["record"]["source_type"] == "video"
+    assert response.status_code == 202
+    assert payload["status"] == "ready"
+    stream = client.get(payload["stream_url"]).get_data(as_text=True)
+    assert stream.count("event: frame") == 3
+    assert "event: complete" in stream
 
 
 def test_video_uses_media_timestamps_not_processing_clock(tmp_path):
@@ -135,12 +136,14 @@ def test_video_uses_media_timestamps_not_processing_clock(tmp_path):
     detector = TimestampDetector()
     app = create_app({"TESTING": True, "DATA_DIR": tmp_path / "data"}, detector=detector)
 
-    response = app.test_client().post(
+    client = app.test_client()
+    response = client.post(
         "/api/detect/video",
         data={"file": (io.BytesIO(path.read_bytes()), "timeline.avi")},
         content_type="multipart/form-data",
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
+    client.get(response.get_json()["stream_url"]).get_data()
     assert [round(item[1], 1) for item in detector.timestamps] == [0.0, 0.5, 1.0, 1.5]
     assert len({item[0] for item in detector.timestamps}) == 1

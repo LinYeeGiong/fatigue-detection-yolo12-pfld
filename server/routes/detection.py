@@ -1,12 +1,10 @@
 import base64
 import binascii
-import tempfile
-import uuid
-from pathlib import Path
+import json
 
 import cv2
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context, url_for
 from werkzeug.utils import secure_filename
 
 
@@ -64,51 +62,41 @@ def detect_video():
     if _extension(item.filename) not in VIDEO_EXTENSIONS:
         return jsonify(error=f"不支持的视频格式: {item.filename}"), 400
     filename = secure_filename(item.filename) or "video.mp4"
-    suffix = "." + _extension(filename)
-    temporary = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=current_app.config["DATA_DIR"])
     try:
-        item.save(temporary)
-        temporary.close()
-        capture = cv2.VideoCapture(temporary.name)
-        if not capture.isOpened():
-            return jsonify(error="无法读取视频文件"), 400
-        fps = capture.get(cv2.CAP_PROP_FPS) or 25
-        interval = max(1, round(fps / 5))
-        results = []
-        frame_index = 0
-        session_id = f"video-{uuid.uuid4()}"
-        while len(results) < 300:
-            ok, frame = capture.read()
-            if not ok:
-                break
-            if frame_index % interval == 0:
-                encoded, buffer = cv2.imencode(".jpg", frame)
-                if encoded:
-                    results.append(
-                        current_app.extensions["detector"].detect_frame(
-                            buffer.tobytes(), session_id=session_id, timestamp=frame_index / fps
-                        )
-                    )
-            frame_index += 1
-        capture.release()
-        if not results:
-            return jsonify(error="视频中没有可分析的画面"), 400
-        rank = {"normal": 0, "mild": 1, "moderate": 2, "severe": 3}
-        highest = max(results, key=lambda result: rank[result["level"]])
-        summary = {
-            "level": highest["level"],
-            "score": max(result["score"] for result in results),
-            "events": sorted({event for result in results for event in result.get("events", [])}),
-            "analyzed_frames": len(results),
-            "status": "completed",
-        }
-        record = current_app.extensions["record_store"].add("video", filename, summary)
-        return jsonify(status="completed", analyzed_frames=len(results), result=summary, record=record)
-    finally:
+        job = current_app.extensions["video_jobs"].create(item, filename)
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
+    job["stream_url"] = url_for("detection_api.video_events", job_id=job["job_id"])
+    return jsonify(job), 202
+
+
+@bp.get("/detect/video/<job_id>/events")
+def video_events(job_id: str):
+    manager = current_app.extensions["video_jobs"]
+    if not manager.exists(job_id):
+        return jsonify(error="视频任务不存在"), 404
+
+    def generate():
         try:
-            Path(temporary.name).unlink(missing_ok=True)
-        except OSError:
-            pass
+            for message in manager.stream(job_id):
+                payload = json.dumps(message["data"], ensure_ascii=False, separators=(",", ":"))
+                yield f"event: {message['event']}\ndata: {payload}\n\n"
+        except (KeyError, RuntimeError) as error:
+            payload = json.dumps({"message": str(error)}, ensure_ascii=False)
+            yield f"event: error\ndata: {payload}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@bp.delete("/detect/video/<job_id>")
+def cancel_video(job_id: str):
+    if not current_app.extensions["video_jobs"].cancel(job_id):
+        return jsonify(error="视频任务不存在"), 404
+    return jsonify(status="cancelled")
 
 
 @bp.get("/records")

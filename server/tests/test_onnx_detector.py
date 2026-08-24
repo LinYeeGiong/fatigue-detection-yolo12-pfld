@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import numpy as np
 
 from server.services.onnx_detector import OnnxDetector
 
@@ -27,7 +28,7 @@ def test_existing_onnx_models_detect_face_and_landmark_metrics():
 
 def test_frame_state_is_isolated_by_session_and_no_face_clears_active_state():
     detector = OnnxDetector.__new__(OnnxDetector)
-    detector._decode = lambda content: object()
+    detector._decode = lambda content: np.zeros((32, 32, 3), dtype=np.uint8)
     detector._detect_faces = lambda image: [(0, 0, 10, 10)] if image is not None else []
     detector._landmark_metrics = lambda image, box: {"ear": 0.1, "mar": 0.2, "pitch": 0.0}
 

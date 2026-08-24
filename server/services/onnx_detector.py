@@ -51,7 +51,9 @@ class OnnxDetector:
         timestamp = time.monotonic() if timestamp is None else timestamp
         if not details:
             snapshot = self._update_session(session_id, Observation(), timestamp)
-            return self._result("camera.jpg", 0, None, snapshot.level, [], snapshot.score)
+            result = self._result("camera.jpg", 0, None, snapshot.level, [], snapshot.score)
+            result["processed_image"] = self._annotate(image, [], [], snapshot.level)
+            return result
         metrics = details[0]
         events = self._events(metrics)
         snapshot = self._update_session(
@@ -64,7 +66,9 @@ class OnnxDetector:
             ),
             timestamp,
         )
-        return self._result("camera.jpg", len(details), metrics, snapshot.level, events, snapshot.score)
+        result = self._result("camera.jpg", len(details), metrics, snapshot.level, events, snapshot.score)
+        result["processed_image"] = self._annotate(image, faces, details, snapshot.level)
+        return result
 
     def _update_session(self, session_id: str, observation: Observation, timestamp: float):
         if not hasattr(self, "_classifier_lock"):

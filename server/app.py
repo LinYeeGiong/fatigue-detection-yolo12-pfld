@@ -5,6 +5,7 @@ from flask import Flask, jsonify, render_template
 
 from server.services.detector import DemoDetector
 from server.services.storage import RecordStore
+from server.services.video_jobs import VideoJobManager
 
 
 def build_detector(model_dir: Path, device_preference: str = "auto"):
@@ -35,6 +36,9 @@ def create_app(config: dict | None = None, detector=None) -> Flask:
     app.config["DATA_DIR"].mkdir(parents=True, exist_ok=True)
     app.extensions["detector"] = detector or build_detector(app.config["MODEL_DIR"], app.config["DEVICE_PREFERENCE"])
     app.extensions["record_store"] = RecordStore(app.config["DATA_DIR"])
+    app.extensions["video_jobs"] = VideoJobManager(
+        app.config["DATA_DIR"], app.extensions["detector"], app.extensions["record_store"]
+    )
 
     from server.routes.detection import bp as detection_bp
 
