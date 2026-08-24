@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block heading %}分析中心{% endblock %}
+{% block content %}
+<div class="page-actions"><div><h2>检测数据分析</h2><p>统计结果来自已保存的真实检测任务。</p></div><div><a class="button secondary" href="/api/analytics/export.csv"><i data-lucide="file-spreadsheet" aria-hidden="true"></i>导出 CSV</a><button id="export-charts" class="button secondary" type="button"><i data-lucide="image-down" aria-hidden="true"></i>导出图表</button><button id="print-report" class="button primary" type="button"><i data-lucide="printer" aria-hidden="true"></i>打印 / PDF</button></div></div>
+
+<section class="metric-grid analytics-metrics" aria-label="分析指标">
+  <article class="metric"><span class="metric-icon blue"><i data-lucide="files" aria-hidden="true"></i></span><div><small>检测任务</small><strong id="analytics-total">--</strong><span>全部已保存任务</span></div></article>
+  <article class="metric"><span class="metric-icon amber"><i data-lucide="triangle-alert" aria-hidden="true"></i></span><div><small>疲劳检出率</small><strong id="analytics-rate">--</strong><span>轻度及以上占比</span></div></article>
+  <article class="metric"><span class="metric-icon green"><i data-lucide="gauge" aria-hidden="true"></i></span><div><small>平均处理帧率</small><strong id="analytics-fps">--</strong><span>视频任务实测值</span></div></article>
+  <article class="metric"><span class="metric-icon violet"><i data-lucide="timer" aria-hidden="true"></i></span><div><small>平均单帧延迟</small><strong id="analytics-latency">--</strong><span>视频任务实测值</span></div></article>
+</section>
+
+<section class="chart-grid">
+  <article class="chart-panel"><div class="chart-head"><div><h3>疲劳等级分布</h3><p>任务最终风险等级</p></div><button class="icon-button chart-download" data-chart="risk-chart" title="下载图表" aria-label="下载疲劳等级分布图"><i data-lucide="download"></i></button></div><div class="chart-wrap"><canvas id="risk-chart" aria-label="疲劳等级分布图"></canvas></div></article>
+  <article class="chart-panel"><div class="chart-head"><div><h3>疲劳行为统计</h3><p>逐帧事件出现次数</p></div><button class="icon-button chart-download" data-chart="event-chart" title="下载图表" aria-label="下载疲劳行为统计图"><i data-lucide="download"></i></button></div><div class="chart-wrap"><canvas id="event-chart" aria-label="疲劳行为统计图"></canvas></div></article>
+  <article class="chart-panel"><div class="chart-head"><div><h3>输入来源分布</h3><p>图片、视频与摄像头任务</p></div><button class="icon-button chart-download" data-chart="source-chart" title="下载图表" aria-label="下载输入来源分布图"><i data-lucide="download"></i></button></div><div class="chart-wrap"><canvas id="source-chart" aria-label="输入来源分布图"></canvas></div></article>
+  <article class="chart-panel wide"><div class="chart-head"><div><h3>检测任务趋势</h3><p>每日任务量与疲劳任务量</p></div><button class="icon-button chart-download" data-chart="trend-chart" title="下载图表" aria-label="下载检测趋势图"><i data-lucide="download"></i></button></div><div class="chart-wrap"><canvas id="trend-chart" aria-label="检测任务趋势图"></canvas></div></article>
+  <article class="chart-panel wide"><div class="chart-head"><div><h3>行为指标趋势</h3><p>每日 EAR、MAR 与俯仰角平均值</p></div><button class="icon-button chart-download" data-chart="metric-chart" title="下载图表" aria-label="下载行为指标趋势图"><i data-lucide="download"></i></button></div><div class="chart-wrap"><canvas id="metric-chart" aria-label="行为指标趋势图"></canvas></div></article>
+</section>
+
+<section class="section-block experiment-block"><div class="section-head"><div><h2>视频实验分析</h2><p>展示实际处理速度、帧数、行为次数和预警次数，不包含无标注依据的精度指标。</p></div></div><div class="table-scroll"><table><thead><tr><th>视频</th><th>处理帧</th><th>平均帧率</th><th>单帧延迟</th><th>闭眼 / 哈欠 / 低头</th><th>重度预警</th><th>操作</th></tr></thead><tbody id="experiment-body"><tr class="empty-row"><td colspan="7">正在读取分析数据…</td></tr></tbody></table></div></section>
+
+<dialog id="video-detail-dialog" class="detail-dialog"><div class="dialog-head"><div><h2 id="detail-title">视频分析详情</h2><p id="detail-subtitle"></p></div><button id="detail-close" class="icon-button" aria-label="关闭详情"><i data-lucide="x"></i></button></div><div class="chart-wrap detail-chart"><canvas id="video-detail-chart" aria-label="视频逐帧指标趋势图"></canvas></div><div id="detail-summary" class="detail-summary"></div></dialog>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='vendor/chart.umd.js') }}" defer></script><script src="{{ url_for('static', filename='js/chart-data.js') }}" defer></script><script src="{{ url_for('static', filename='js/analytics.js') }}" defer></script>{% endblock %}

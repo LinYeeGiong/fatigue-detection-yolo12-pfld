@@ -2,26 +2,48 @@
 {% block heading %}检测中心{% endblock %}
 {% block content %}
 <div class="segmented" role="tablist" aria-label="输入来源">
-  <button class="active" data-panel="images" role="tab">批量图片</button>
-  <button data-panel="video" role="tab">视频分析</button>
-  <button data-panel="camera" role="tab">实时监测</button>
+  <button class="active" data-panel="images" role="tab" aria-selected="true"><i data-lucide="images" aria-hidden="true"></i>批量图片</button>
+  <button data-panel="video" role="tab" aria-selected="false"><i data-lucide="video" aria-hidden="true"></i>视频分析</button>
+  <button data-panel="camera" role="tab" aria-selected="false"><i data-lucide="webcam" aria-hidden="true"></i>实时监测</button>
 </div>
-<section id="images" class="detect-panel active">
-  <div class="tool-pane">
-    <h2>批量图片检测</h2><p>支持 JPG、PNG、WEBP、BMP，可一次选择多张。</p>
-    <label class="drop-zone" for="image-files"><strong>选择驾驶员图片</strong><span>支持多选，单次总大小不超过 100 MB</span></label>
+
+<section id="images" class="detect-panel active" aria-label="批量图片检测">
+  <aside class="tool-pane">
+    <div class="tool-title"><span><i data-lucide="images" aria-hidden="true"></i></span><div><h2>批量图片检测</h2><p>支持 JPG、PNG、WEBP、BMP</p></div></div>
+    <label class="drop-zone" for="image-files"><i data-lucide="image-up" aria-hidden="true"></i><strong>选择驾驶员图片</strong><span>支持多选，单次总大小不超过 100 MB</span></label>
     <input id="image-files" type="file" accept="image/jpeg,image/png,image/webp,image/bmp" multiple hidden>
-    <button id="image-submit" class="button primary" type="button">开始检测</button>
+    <button id="image-submit" class="button primary full" type="button"><i data-lucide="scan-line" aria-hidden="true"></i>开始检测</button>
+  </aside>
+  <div class="result-pane"><div class="empty-state" id="image-empty"><span class="empty-icon"><i data-lucide="image" aria-hidden="true"></i></span><strong>等待图片</strong><span>检测结果将在这里按图片展示</span></div><div id="image-results" class="result-grid"></div></div>
+</section>
+
+<section id="video" class="detect-panel" aria-label="视频逐帧分析">
+  <aside class="tool-pane">
+    <div class="tool-title"><span><i data-lucide="video" aria-hidden="true"></i></span><div><h2>视频逐帧分析</h2><p>支持 MP4、AVI、MOV、MKV、WEBM</p></div></div>
+    <label class="drop-zone compact" for="video-file"><i data-lucide="file-video" aria-hidden="true"></i><strong>选择驾驶视频</strong><span id="video-name">尚未选择文件</span></label>
+    <input id="video-file" type="file" accept="video/mp4,video/x-msvideo,video/quicktime,video/x-matroska,video/webm" hidden>
+    <div class="button-row"><button id="video-submit" class="button primary" type="button"><i data-lucide="play" aria-hidden="true"></i>开始分析</button><button id="video-cancel" class="button secondary" type="button" disabled><i data-lucide="square" aria-hidden="true"></i>停止</button></div>
+    <div class="progress-group"><div><span id="video-phase">等待视频</span><strong id="video-progress-text">0%</strong></div><progress id="video-progress" max="100" value="0">0%</progress><small id="video-frame-count">0 / 0 帧</small></div>
+    <div class="live-metrics" id="video-metrics"><span>EAR<strong>--</strong></span><span>MAR<strong>--</strong></span><span>俯仰角<strong>--</strong></span><span>处理帧率<strong>--</strong></span><span>单帧延迟<strong>--</strong></span><span>视频时间<strong>--</strong></span></div>
+  </aside>
+  <div class="result-pane media-result">
+    <div class="media-stage"><img id="video-processed" alt="视频检测后的实时画面" hidden><div id="video-empty" class="empty-state"><span class="empty-icon"><i data-lucide="monitor-play" aria-hidden="true"></i></span><strong>等待视频分析</strong><span>开始后会连续显示每一帧检测画面</span></div><span id="video-level" class="level normal" hidden>正常</span></div>
+    <div id="video-status" class="result-strip"><span><i data-lucide="activity" aria-hidden="true"></i><strong>任务尚未开始</strong></span><small>完成后自动保存实验分析数据</small></div>
   </div>
-  <div class="result-pane"><div class="empty-state" id="image-empty"><strong>等待图片</strong><span>检测结果将在这里按图片展示</span></div><div id="image-results" class="result-grid"></div></div>
 </section>
-<section id="video" class="detect-panel">
-  <div class="tool-pane"><h2>视频分析</h2><p>支持 MP4、AVI、MOV、MKV、WEBM。</p><label class="drop-zone" for="video-file"><strong>选择驾驶视频</strong><span id="video-name">尚未选择文件</span></label><input id="video-file" type="file" accept="video/*" hidden><button id="video-submit" class="button primary" type="button">提交分析</button></div>
-  <div class="result-pane"><video id="video-preview" controls></video><div id="video-status" class="empty-state"><strong>等待视频</strong><span>上传后显示任务状态</span></div></div>
+
+<section id="camera" class="detect-panel" aria-label="摄像头实时监测">
+  <aside class="tool-pane">
+    <div class="tool-title"><span><i data-lucide="webcam" aria-hidden="true"></i></span><div><h2>摄像头实时监测</h2><p>画面在本机持续处理</p></div></div>
+    <div class="button-row"><button id="camera-start" class="button primary" type="button"><i data-lucide="camera" aria-hidden="true"></i>启动监测</button><button id="camera-stop" class="button secondary" type="button" disabled><i data-lucide="square" aria-hidden="true"></i>停止</button></div>
+    <div id="camera-metrics" class="live-metrics three"><span>EAR<strong>--</strong></span><span>MAR<strong>--</strong></span><span>俯仰角<strong>--</strong></span></div>
+    <div class="event-legend"><span><i class="dot eye"></i>闭眼</span><span><i class="dot yawn"></i>哈欠</span><span><i class="dot head"></i>低头</span></div>
+  </aside>
+  <div class="result-pane media-result">
+    <div class="media-stage"><img id="camera-processed" alt="摄像头检测后的实时画面" hidden><div id="camera-empty" class="empty-state"><span class="empty-icon"><i data-lucide="camera-off" aria-hidden="true"></i></span><strong>摄像头未启动</strong><span>启动后显示实时标注画面</span></div><video id="camera-preview" autoplay muted playsinline aria-label="摄像头原始画面"></video><canvas id="camera-canvas" hidden></canvas><span id="camera-level" class="level normal" hidden>正常</span></div>
+  </div>
 </section>
-<section id="camera" class="detect-panel">
-  <div class="tool-pane"><h2>实时监测</h2><p>摄像头画面仅在本机处理，每 500 ms 采样一次。</p><button id="camera-start" class="button primary" type="button">启动摄像头</button><button id="camera-stop" class="button secondary" type="button" disabled>停止</button><div id="camera-metrics" class="live-metrics"><span>EAR <strong>--</strong></span><span>MAR <strong>--</strong></span><span>Pitch <strong>--</strong></span></div></div>
-  <div class="result-pane camera-stage"><video id="camera-preview" autoplay muted playsinline></video><canvas id="camera-canvas" hidden></canvas><span id="camera-level" class="level normal">正常</span></div>
-</section>
-<div id="severe-alert" class="alert-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" hidden><div><p class="eyebrow">安全预警</p><h2 id="alert-title">检测到重度疲劳</h2><p>请立即停止驾驶并安全休息。</p><button id="alert-close" class="button danger" type="button">我已知晓</button></div></div>
+
+<div id="severe-alert" class="alert-dialog" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" hidden><div><span class="alert-icon"><i data-lucide="triangle-alert" aria-hidden="true"></i></span><h2 id="alert-title">检测到重度疲劳</h2><p>当前状态存在较高驾驶风险，请立即停车并充分休息。</p><button id="alert-close" class="button danger full" type="button">我已知晓</button></div></div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/detection.js') }}" defer></script>{% endblock %}

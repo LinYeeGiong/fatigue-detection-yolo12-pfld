@@ -31,7 +31,12 @@ def test_detection_workspace_has_accessible_controls_and_alert(tmp_path):
     assert 'multiple' in html
     assert 'id="video-file"' in html
     assert 'id="camera-start"' in html
+    assert 'id="video-processed"' in html
+    assert 'id="video-progress"' in html
+    assert 'id="video-cancel"' in html
+    assert 'id="camera-processed"' in html
     assert 'role="alertdialog"' in html
+    assert "抽帧" not in html
 
 
 def test_history_page_has_real_empty_state_container(tmp_path):
@@ -40,3 +45,33 @@ def test_history_page_has_real_empty_state_container(tmp_path):
     assert response.status_code == 200
     assert 'id="history-body"' in html
     assert "暂无检测记录" in html
+
+
+def test_analytics_page_has_charts_and_export_controls(tmp_path):
+    response = make_client(tmp_path).get("/analytics")
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert 'id="risk-chart"' in html
+    assert 'id="event-chart"' in html
+    assert 'id="source-chart"' in html
+    assert 'id="trend-chart"' in html
+    assert 'id="metric-chart"' in html
+    assert 'href="/api/analytics/export.csv"' in html
+    assert 'id="export-charts"' in html
+    assert 'id="print-report"' in html
+
+
+def test_user_pages_hide_model_and_demo_implementation_terms(tmp_path):
+    client = make_client(tmp_path)
+    for path in ("/", "/detect", "/analytics", "/history"):
+        html = client.get(path).get_data(as_text=True).lower()
+        assert "yolo" not in html
+        assert "pfld" not in html
+        assert "demo" not in html
+
+
+def test_dashboard_uses_persisted_summary_containers(tmp_path):
+    html = make_client(tmp_path).get("/").get_data(as_text=True)
+    assert 'id="overview-total"' in html
+    assert 'id="overview-fatigue-rate"' in html
+    assert 'id="overview-risk-bars"' in html

@@ -43,7 +43,7 @@ async function startApplication() {
     minWidth: 1024,
     minHeight: 700,
     show: false,
-    backgroundColor: '#0b1018',
+    backgroundColor: '#f4f6f9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

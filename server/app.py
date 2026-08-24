@@ -63,6 +63,10 @@ def create_app(config: dict | None = None, detector=None) -> Flask:
     def detect_page():
         return render_template("detect.html", page="detect", detector=app.extensions["detector"])
 
+    @app.get("/analytics")
+    def analytics_page():
+        return render_template("analytics.html", page="analytics", detector=app.extensions["detector"])
+
     @app.get("/history")
     def history_page():
         return render_template("history.html", page="history", detector=app.extensions["detector"])

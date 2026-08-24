@@ -1,17 +1,30 @@
 {% extends "base.html" %}
 {% block heading %}运行总览{% endblock %}
 {% block content %}
-<section class="metrics" aria-label="系统指标">
-  <article class="metric"><span>服务状态</span><strong>在线</strong><small>{{ detector.name }}</small></article>
-  <article class="metric"><span>当前设备</span><strong>{{ detector.device|upper }}</strong><small>不可用时自动回退 CPU</small></article>
-  <article class="metric"><span>风险等级</span><strong>4 级</strong><small>正常 / 轻度 / 中度 / 重度</small></article>
-  <article class="metric"><span>检测行为</span><strong>3 类</strong><small>闭眼 / 哈欠 / 低头</small></article>
+<section class="metric-grid" aria-label="检测概览">
+  <article class="metric"><span class="metric-icon blue"><i data-lucide="files" aria-hidden="true"></i></span><div><small>累计检测任务</small><strong id="overview-total">--</strong><span>图片与视频记录</span></div></article>
+  <article class="metric"><span class="metric-icon amber"><i data-lucide="triangle-alert" aria-hidden="true"></i></span><div><small>疲劳任务占比</small><strong id="overview-fatigue-rate">--</strong><span>轻度及以上任务</span></div></article>
+  <article class="metric"><span class="metric-icon green"><i data-lucide="gauge" aria-hidden="true"></i></span><div><small>平均处理帧率</small><strong id="overview-fps">--</strong><span>视频实测吞吐率</span></div></article>
+  <article class="metric"><span class="metric-icon violet"><i data-lucide="timer" aria-hidden="true"></i></span><div><small>平均单帧延迟</small><strong id="overview-latency">--</strong><span>视频实测耗时</span></div></article>
 </section>
-<section class="section-head"><div><h2>开始检测</h2><p>选择输入来源进入统一检测工作区。</p></div></section>
-<section class="workflow-grid">
-  <a class="workflow" href="/detect#images"><span class="workflow-index">01</span><h3>批量图片</h3><p>一次选择多张驾驶员图片，逐项查看疲劳等级与指标。</p><span class="action-link">开始处理 →</span></a>
-  <a class="workflow" href="/detect#video"><span class="workflow-index">02</span><h3>视频分析</h3><p>上传车内驾驶视频，建立检测记录并输出分析状态。</p><span class="action-link">选择视频 →</span></a>
-  <a class="workflow" href="/detect#camera"><span class="workflow-index">03</span><h3>实时监测</h3><p>调用本机摄像头，持续分析闭眼、哈欠与低头行为。</p><span class="action-link">打开摄像头 →</span></a>
+
+<div class="overview-layout">
+  <section class="section-block">
+    <div class="section-head"><div><h2>快速开始</h2><p>选择检测来源，结果会自动进入历史和统计。</p></div></div>
+    <div class="workflow-list">
+      <a class="workflow" href="/detect#images"><span class="workflow-icon"><i data-lucide="images" aria-hidden="true"></i></span><span><strong>批量图片</strong><small>同时检测多张车内驾驶图像</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></a>
+      <a class="workflow" href="/detect#video"><span class="workflow-icon"><i data-lucide="video" aria-hidden="true"></i></span><span><strong>视频分析</strong><small>逐帧显示处理后的完整视频画面</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></a>
+      <a class="workflow" href="/detect#camera"><span class="workflow-icon"><i data-lucide="webcam" aria-hidden="true"></i></span><span><strong>实时监测</strong><small>持续显示摄像头标注结果</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></a>
+    </div>
+  </section>
+  <section class="section-block risk-summary">
+    <div class="section-head"><div><h2>风险等级分布</h2><p>基于已保存的检测任务。</p></div><a href="/analytics" class="text-link">查看完整分析 <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+    <div id="overview-risk-bars" class="risk-bars" aria-live="polite"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+  </section>
+</div>
+
+<section class="section-block recent-block">
+  <div class="section-head"><div><h2>最近高风险记录</h2><p>中度及重度任务会显示在此处。</p></div><a href="/history" class="button secondary small"><i data-lucide="list" aria-hidden="true"></i>全部记录</a></div>
+  <div class="table-scroll"><table><thead><tr><th>时间</th><th>来源</th><th>文件</th><th>等级</th><th>分值</th></tr></thead><tbody id="overview-high-risk"><tr class="empty-row"><td colspan="5">正在读取记录…</td></tr></tbody></table></div>
 </section>
-<section class="notice"><strong>验收口径</strong><p>系统使用现有 YOLO11-face 与 PFLD 权重，不包含重新训练或 YOLO12 精度提升声明。</p></section>
 {% endblock %}

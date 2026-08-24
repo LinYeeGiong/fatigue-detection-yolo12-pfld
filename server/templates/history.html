@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block heading %}历史记录{% endblock %}
 {% block content %}
-<section class="table-panel"><div class="section-head"><div><h2>检测记录</h2><p>图片、视频任务及最终风险等级。</p></div><button id="history-refresh" class="button secondary">刷新</button></div><div class="table-scroll"><table><thead><tr><th>时间</th><th>来源</th><th>文件</th><th>等级</th><th>分值</th></tr></thead><tbody id="history-body"><tr class="empty-row"><td colspan="5">暂无检测记录</td></tr></tbody></table></div></section>
+<section class="section-block history-block">
+  <div class="page-actions"><div><h2>检测记录</h2><p>查看图片、视频任务及最终风险等级。</p></div><div><label class="select-control"><span>等级筛选</span><select id="history-filter"><option value="all">全部等级</option><option value="normal">正常</option><option value="mild">轻度</option><option value="moderate">中度</option><option value="severe">重度</option></select></label><a class="button secondary" href="/api/analytics/export.csv"><i data-lucide="download" aria-hidden="true"></i>导出 CSV</a><button id="history-refresh" class="icon-button" type="button" title="刷新记录" aria-label="刷新记录"><i data-lucide="refresh-cw"></i></button></div></div>
+  <div class="table-scroll"><table><thead><tr><th>时间</th><th>来源</th><th>文件</th><th>等级</th><th>分值</th><th>操作</th></tr></thead><tbody id="history-body"><tr class="empty-row"><td colspan="6">暂无检测记录</td></tr></tbody></table></div>
+</section>
 {% endblock %}
