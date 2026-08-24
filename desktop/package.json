@@ -1,0 +1,29 @@
+{
+  "name": "fatigue-detection-desktop",
+  "version": "1.0.0",
+  "description": "基于 YOLO11 与 PFLD 的驾驶员疲劳监测桌面端",
+  "author": "Fatigue Detection Project",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "pack": "electron-builder --dir --win",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "39.2.7",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "cn.fatigue.monitor",
+    "productName": "驾驶员疲劳监测系统",
+    "directories": {"output": "../release"},
+    "files": ["src/**/*", "package.json"],
+    "extraResources": [
+      {"from": "../dist/fatigue-server", "to": "server"},
+      {"from": "../models", "to": "models", "filter": ["*.onnx"]}
+    ],
+    "win": {"target": ["nsis"]},
+    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true}
+  }
+}

@@ -1,5 +1,9 @@
 import base64
 import io
+from pathlib import Path
+
+import cv2
+import numpy as np
 
 from server.app import create_app
 
@@ -91,3 +95,24 @@ def test_video_upload_requires_supported_file(tmp_path):
         content_type="multipart/form-data",
     )
     assert response.status_code == 400
+
+
+def test_video_upload_analyzes_sampled_frames(tmp_path):
+    path = tmp_path / "sample.avi"
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"MJPG"), 5, (64, 48))
+    for value in (20, 80, 140):
+        writer.write(np.full((48, 64, 3), value, dtype=np.uint8))
+    writer.release()
+
+    client = make_client(tmp_path / "data")
+    response = client.post(
+        "/api/detect/video",
+        data={"file": (io.BytesIO(path.read_bytes()), "sample.avi")},
+        content_type="multipart/form-data",
+    )
+
+    payload = response.get_json()
+    assert response.status_code == 200
+    assert payload["status"] == "completed"
+    assert payload["analyzed_frames"] == 3
+    assert payload["record"]["source_type"] == "video"

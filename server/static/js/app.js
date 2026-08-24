@@ -13,7 +13,7 @@ $('#image-submit')?.addEventListener('click',async()=>{if(!images.files.length)r
 
 const video=$('#video-file');
 video?.addEventListener('change',()=>{if(!video.files.length)return;$('#video-name').textContent=video.files[0].name;$('#video-preview').src=URL.createObjectURL(video.files[0])});
-$('#video-submit')?.addEventListener('click',async()=>{if(!video.files.length)return toast('请先选择视频');const data=new FormData();data.append('file',video.files[0]);try{const body=await jsonRequest('/api/detect/video',{method:'POST',body:data});$('#video-status').innerHTML=`<strong>任务已接收</strong><span>记录编号 #${body.record.id}</span>`}catch(error){toast(error.message)}});
+$('#video-submit')?.addEventListener('click',async()=>{if(!video.files.length)return toast('请先选择视频');const data=new FormData();data.append('file',video.files[0]);const button=$('#video-submit');button.disabled=true;button.textContent='分析中…';try{const body=await jsonRequest('/api/detect/video',{method:'POST',body:data});$('#video-status').innerHTML=`<strong>分析完成 · ${labels[body.result.level]}</strong><span>抽样 ${body.analyzed_frames} 帧，记录编号 #${body.record.id}</span>`;if(body.result.level==='severe')showAlert()}catch(error){toast(error.message)}finally{button.disabled=false;button.textContent='提交分析'}});
 
 let stream=null,timer=null;
 $('#camera-start')?.addEventListener('click',async()=>{try{stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:960},height:{ideal:540}},audio:false});$('#camera-preview').srcObject=stream;$('#camera-start').disabled=true;$('#camera-stop').disabled=false;timer=setInterval(processCameraFrame,500)}catch(error){toast('无法打开摄像头，请检查系统权限')}});

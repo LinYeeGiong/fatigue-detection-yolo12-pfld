@@ -1,0 +1,14 @@
+services:
+  fatigue-monitor:
+    build:
+      args:
+        REQUIREMENTS: server/requirements-gpu.txt
+    environment:
+      FATIGUE_DEVICE: auto
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

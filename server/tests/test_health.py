@@ -1,4 +1,4 @@
-from server.app import create_app
+from server.app import build_detector, create_app
 
 
 class ReadyDetector:
@@ -21,3 +21,9 @@ def test_health_reports_detector_and_runtime(tmp_path):
         "detector": "test-detector",
         "device": "cpu",
     }
+
+
+def test_missing_models_fall_back_to_explicit_demo_mode(tmp_path):
+    detector = build_detector(tmp_path / "missing", "auto")
+    assert detector.name == "demo"
+    assert detector.device == "cpu"

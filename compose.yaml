@@ -1,0 +1,16 @@
+services:
+  fatigue-monitor:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: server/requirements.txt
+    ports:
+      - "5001:5001"
+    environment:
+      FATIGUE_DEVICE: cpu
+    volumes:
+      - fatigue-data:/data
+    restart: unless-stopped
+
+volumes:
+  fatigue-data:
