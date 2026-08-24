@@ -1,6 +1,8 @@
 # 驾驶员疲劳监测系统
 
-基于现有 YOLO11-face 与 PFLD ONNX 权重的本地疲劳监测系统。支持批量图片、视频文件和摄像头画面，输出闭眼、哈欠、低头事件及正常、轻度、中度、重度四级状态。本项目不包含模型重新训练，也不声明 YOLO12 或训练精度提升。
+本地驾驶员疲劳行为检测与分析系统，支持批量图片、上传视频和摄像头画面。系统识别闭眼、哈欠、低头行为，按正常、轻度、中度、重度四级输出风险，并保存历史记录和实验分析数据。
+
+上传视频会按源顺序处理每一个可解码帧，通过 SSE 连续显示标注后的画面，同时更新进度、EAR、MAR、俯仰角、处理帧率和单帧延迟。分析中心提供等级、行为、来源、任务趋势、指标趋势图，以及 CSV、PNG 和打印/PDF 导出。
 
 ## 开发运行
 
@@ -13,11 +15,11 @@ $env:FATIGUE_MODEL_DIR="$PWD\models"
 .\.venv\Scripts\python.exe -m server.app
 
 cd desktop
-npm install
+npm ci
 npm start
 ```
 
-模型文件必须位于 `models/yolo11_face.onnx` 和 `models/pfld.onnx`。缺失时系统会明确显示 `demo`，该模式只能用于界面开发，不能用于正式验收。
+现有推理权重位于 `models/yolo11_face.onnx` 和 `models/pfld.onnx`。本项目直接使用已有权重，不包含重新训练，也不声明 YOLO12、mAP 提升或无标注依据的准确率。
 
 ## Windows 构建
 
@@ -25,17 +27,17 @@ npm start
 .\scripts\build-windows.ps1
 ```
 
-安装包输出到 `release/`。桌面端自动选择空闲端口、等待后端就绪，并把数据库保存在 Electron 用户数据目录。有 CUDA Provider 时自动使用 GPU，否则回退 CPU。
+安装包输出到 `release/`。桌面端自动选择本地端口、等待服务就绪，并将 SQLite 数据保存到 Electron 用户数据目录。CPU 是必需运行基线；存在可用 CUDA Provider 时自动使用 GPU。
 
 ## Docker
 
 ```powershell
 docker compose up --build
-# 可选 NVIDIA GPU：
+# 可选 NVIDIA GPU
 docker compose -f compose.yaml -f compose.gpu.yaml up --build
 ```
 
-启动后访问 `http://localhost:5001`。CPU 配置是正式支持基线，GPU 配置依赖宿主机驱动、Docker Desktop/WSL2 和 NVIDIA Container Toolkit。
+启动后访问 `http://localhost:5001`。GPU 配置依赖宿主机驱动、Docker Desktop/WSL2 和 NVIDIA Container Toolkit。
 
 ## 测试
 

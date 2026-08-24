@@ -1,7 +1,7 @@
 {
   "name": "fatigue-detection-desktop",
   "version": "1.0.0",
-  "description": "基于 YOLO11 与 PFLD 的驾驶员疲劳监测桌面端",
+  "description": "驾驶员疲劳行为检测、风险分级与数据分析桌面系统",
   "author": "Fatigue Detection Project",
   "main": "src/main.js",
   "scripts": {
