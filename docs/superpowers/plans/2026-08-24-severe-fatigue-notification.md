@@ -51,3 +51,28 @@
 - [ ] Replace modal CSS with upper-right notification layout, enter/exit animation, responsive placement, and reduced-motion handling.
 - [ ] Run all Python and Node tests.
 - [ ] Restart the local server and inspect the detection page at desktop size.
+
+### Task 3: Optional Pose And Landmark Overlay
+
+**Files:**
+- Modify: `server/services/onnx_detector.py`
+- Modify: `server/routes/detection.py`
+- Modify: `server/services/video_jobs.py`
+- Modify: `server/templates/detect.html`
+- Modify: `server/static/js/detection.js`
+- Modify: `server/static/css/app.css`
+- Test: `server/tests/test_onnx_detector.py`
+- Test: `server/tests/test_detection_api.py`
+- Test: `server/tests/test_pages.py`
+
+**Interfaces:**
+- `detect_image(content, filename, show_pose=False)`
+- `detect_frame(content, session_id="default", timestamp=None, show_pose=False)`
+- Request field: `show_pose`, represented as JSON boolean or multipart string `true`
+
+- [ ] Add failing tests for Yaw/Pitch/Roll extraction, absolute 98-point coordinates, request propagation, and the accessible toggle.
+- [ ] Extend PFLD metric extraction and keep landmarks out of public stored metrics.
+- [ ] Draw landmark points and pose text only when `show_pose` is true.
+- [ ] Pass the option through image, video, and camera request paths.
+- [ ] Add the global `显示位姿` toggle and show Roll/Yaw in result metrics.
+- [ ] Run model, API, page, and full regression tests.

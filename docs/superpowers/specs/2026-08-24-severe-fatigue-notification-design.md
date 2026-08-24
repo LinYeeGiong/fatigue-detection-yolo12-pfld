@@ -19,3 +19,7 @@ The notification is fixed below the top bar at the upper-right, with a compact w
 ## Verification
 
 Node tests cover state deduplication, re-arming, auto-dismissal, and manual dismissal. Flask page tests verify alert semantics and the absence of a modal dialog. Browser inspection confirms placement and that the detection workspace remains interactive.
+
+## Pose And Landmark Overlay
+
+The detection toolbar also provides a global, default-off `显示位姿` toggle. When enabled, image, video, and camera requests ask the existing PFLD inference path to draw all 98 facial landmarks and show Pitch, Roll, and Yaw on each detected face. The three numeric pose values are returned with EAR and MAR for the live metric panels, while landmark arrays remain internal to annotation and are not persisted in analytics records.
