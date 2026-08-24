@@ -95,19 +95,20 @@ class RecordStore:
             if record["source_type"] == "video":
                 if details.get("average_fps") is not None and details.get("average_latency_ms") is not None:
                     performance.append((float(details["average_fps"]), float(details["average_latency_ms"])))
-                video_experiments.append(
-                    {
-                        **self._public_record(record),
-                        "processed_frames": int(details.get("processed_frames", 0)),
-                        "total_frames": int(details.get("total_frames", 0)),
-                        "duration_seconds": float(details.get("duration_seconds", 0)),
-                        "average_fps": float(details.get("average_fps", 0)),
-                        "average_latency_ms": float(details.get("average_latency_ms", 0)),
-                        "warning_count": int(details.get("warning_count", 0)),
-                        "event_counts": details.get("event_counts", {name: 0 for name in events}),
-                        "level_distribution": details.get("level_distribution", {name: 0 for name in risk}),
-                    }
-                )
+                if details.get("processed_frames") is not None:
+                    video_experiments.append(
+                        {
+                            **self._public_record(record),
+                            "processed_frames": int(details.get("processed_frames", 0)),
+                            "total_frames": int(details.get("total_frames", 0)),
+                            "duration_seconds": float(details.get("duration_seconds", 0)),
+                            "average_fps": float(details.get("average_fps", 0)),
+                            "average_latency_ms": float(details.get("average_latency_ms", 0)),
+                            "warning_count": int(details.get("warning_count", 0)),
+                            "event_counts": details.get("event_counts", {name: 0 for name in events}),
+                            "level_distribution": details.get("level_distribution", {name: 0 for name in risk}),
+                        }
+                    )
 
         total = len(records)
         fatigue = total - risk.get("normal", 0)

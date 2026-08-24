@@ -105,3 +105,17 @@ def test_csv_export_has_bom_headers_and_detection_values(tmp_path):
     assert "记录编号,检测时间,输入来源,文件名称,疲劳等级,风险分值" in text
     assert "trip.avi,中度,73" in text
     assert response.headers["Content-Disposition"].startswith("attachment;")
+
+
+def test_legacy_video_without_frame_measurements_is_excluded_from_experiments(tmp_path):
+    app = create_app({"TESTING": True, "DATA_DIR": tmp_path}, detector=Detector())
+    app.extensions["record_store"].add(
+        "video",
+        "legacy.mp4",
+        {"level": "normal", "score": 10, "events": [], "status": "completed"},
+    )
+
+    data = app.test_client().get("/api/analytics/summary").get_json()
+
+    assert data["totals"]["total_tasks"] == 1
+    assert data["video_experiments"] == []
