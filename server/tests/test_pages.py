@@ -2,7 +2,7 @@ from server.app import create_app
 
 
 class Detector:
-    name = "YOLO11-face + PFLD"
+    name = "YOLO12-face + PFLD"
     device = "cpu"
     ready = True
 

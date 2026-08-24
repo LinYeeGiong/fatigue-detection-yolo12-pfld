@@ -19,7 +19,7 @@ npm ci
 npm start
 ```
 
-现有推理权重位于 `models/yolo11_face.onnx` 和 `models/pfld.onnx`。本项目直接使用已有权重，不包含重新训练，也不声明 YOLO12、mAP 提升或无标注依据的准确率。
+现有推理权重位于 `models/yolo12_face.onnx` 和 `models/pfld.onnx`。本项目直接使用已有权重，不在客户电脑上执行训练。
 
 ## Windows 构建
 

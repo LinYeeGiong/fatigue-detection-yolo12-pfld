@@ -4,7 +4,7 @@
 
 **Goal:** Build a Windows Electron application around a tested Flask fatigue-detection service, with CPU-first Docker deployment and concise delivery documentation.
 
-**Architecture:** A Flask JSON/API and server-rendered dashboard provide one reusable UI for Electron and Docker. Electron supervises the local Python sidecar. Detection is behind an adapter so tests and UI run deterministically while existing YOLO11/PFLD assets remain the production integration point.
+**Architecture:** A Flask JSON/API and server-rendered dashboard provide one reusable UI for Electron and Docker. Electron supervises the local Python sidecar. Detection is behind an adapter so tests and UI run deterministically while existing YOLO12/PFLD assets remain the production integration point.
 
 **Tech Stack:** Python 3.11, Flask, SQLAlchemy, OpenCV/ONNX Runtime adapter, pytest, Electron, Node test runner, Bootstrap-compatible HTML/CSS, Docker Compose.
 

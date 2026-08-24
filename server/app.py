@@ -10,7 +10,7 @@ from server.services.video_jobs import VideoJobManager
 
 def build_detector(model_dir: Path, device_preference: str = "auto"):
     model_dir = Path(model_dir)
-    required = (model_dir / "yolo11_face.onnx", model_dir / "pfpld.onnx")
+    required = (model_dir / "yolo12_face.onnx", model_dir / "pfpld.onnx")
     if not all(path.is_file() for path in required):
         return DemoDetector()
     try:

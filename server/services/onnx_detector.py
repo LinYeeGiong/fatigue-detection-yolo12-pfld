@@ -12,7 +12,7 @@ from server.domain.fatigue import FatigueClassifier, Observation
 
 
 class OnnxDetector:
-    name = "YOLO11-face + PFLD (ONNX)"
+    name = "YOLO12-face + PFLD (ONNX)"
     ready = True
 
     def __init__(self, model_dir: Path, device_preference: str = "auto"):
@@ -21,7 +21,7 @@ class OnnxDetector:
         use_cuda = device_preference != "cpu" and "CUDAExecutionProvider" in available
         providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if use_cuda else ["CPUExecutionProvider"]
         self.device = "cuda" if use_cuda else "cpu"
-        self.face_session = ort.InferenceSession(str(model_dir / "yolo11_face.onnx"), providers=providers)
+        self.face_session = ort.InferenceSession(str(model_dir / "yolo12_face.onnx"), providers=providers)
         self.pfld_session = ort.InferenceSession(str(model_dir / "pfpld.onnx"), providers=providers)
         self._classifiers = OrderedDict()
         self._classifier_lock = threading.Lock()
