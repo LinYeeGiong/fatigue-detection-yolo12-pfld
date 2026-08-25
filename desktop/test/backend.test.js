@@ -45,3 +45,24 @@ test('waitForHealth rejects after timeout', async () => {
     /后端服务启动超时/,
   );
 });
+
+test('waitForHealth allows 120 seconds for cold starts by default', async () => {
+  const originalNow = Date.now;
+  const originalSetTimeout = global.setTimeout;
+  let elapsedMs = 0;
+  Date.now = () => elapsedMs;
+  global.setTimeout = (callback, delay) => {
+    elapsedMs += delay;
+    callback();
+    return 0;
+  };
+
+  try {
+    const fakeFetch = async () => { throw new Error('offline'); };
+    await assert.rejects(waitForHealth('http://localhost:5001', {fetchImpl: fakeFetch}), /后端服务启动超时/);
+    assert.equal(elapsedMs, 120000);
+  } finally {
+    Date.now = originalNow;
+    global.setTimeout = originalSetTimeout;
+  }
+});

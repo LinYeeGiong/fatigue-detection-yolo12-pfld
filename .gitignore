@@ -7,6 +7,7 @@ dist/
 build/
 release/
 data/
+test_img_video/
 uploads/
 outputs/
 models/*.pth

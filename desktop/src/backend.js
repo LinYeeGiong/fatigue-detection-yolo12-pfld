@@ -20,7 +20,7 @@ function resolveBackendCommand({packaged, root, resourcesPath, python = 'python'
   return {executable: python, args: ['-m', 'server.app'], cwd: path.resolve(root)};
 }
 
-async function waitForHealth(baseUrl, {fetchImpl = fetch, timeoutMs = 30000, intervalMs = 250} = {}) {
+async function waitForHealth(baseUrl, {fetchImpl = fetch, timeoutMs = 120000, intervalMs = 250} = {}) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
